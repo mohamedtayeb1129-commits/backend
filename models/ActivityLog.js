@@ -35,7 +35,7 @@ const ActivityLog = sequelize.define("activity-log", {
     },
 
      user_role: {
-        type: DataTypes.ENUM("مديرة","مقتصد"),
+        type: DataTypes.ENUM("مدير","مقتصد"),
         allowNull: false,
     },
     user_id: {
