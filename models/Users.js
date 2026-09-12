@@ -22,8 +22,8 @@ const User  = sequelize.define("user",{
         allowNull:false
     },
     role:{
-        type:DataTypes.ENUM("مقتصد","مديرة"),
-        defaultValue:"مديرة"
+        type:DataTypes.ENUM("مقتصد","مدير"),
+        defaultValue:"مدير"
     },
     is_deleted : {
         type:DataTypes.BOOLEAN,
