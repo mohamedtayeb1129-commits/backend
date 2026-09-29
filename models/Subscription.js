@@ -3,6 +3,7 @@ const sequelize = require("../config/db");
 const Teacher = require("./Teacher");
 const Student = require("./Student");
 const Zone = require("./Zone");
+const SchoolYear = require("./SchoolYear");
 
 const Subscription  = sequelize.define("subscriptions",{
     id:{
@@ -55,6 +56,22 @@ const Subscription  = sequelize.define("subscriptions",{
             key:"id"
         }
     },
+    school_year_id: {
+  type: DataTypes.BIGINT,
+  allowNull: false,
+  references: {
+    model: SchoolYear,
+    key: "id",
+  },
+},
+    is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+    },
+    deactivated_by_break: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+    }
     
 })
 module.exports = Subscription

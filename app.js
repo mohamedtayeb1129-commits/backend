@@ -19,6 +19,8 @@ const DaycareBooksFee = require("./routers/DaycareBooksFee");
 const activityLogRoutes = require("./routers/activityLogRoutes");
 const StaffPaymentRouter = require("./routers/StaffPaymentRouter");
 const AuthenticateToken = require("./middlewares/AuthenticateToken");
+const SchoolYearRouter = require("./routers/SchoolYearRouter");
+const HolidayRouter = require("./routers/HolidayRouter");
 
 router.use("/auth",AuthRouter)
 router.use("/student",AuthenticateToken,StudentRouter)
@@ -38,5 +40,7 @@ router.use("/download",DownloadRouter)
 router.use("/daycare-books-fee",AuthenticateToken,DaycareBooksFee)
 router.use("/activity-logs", activityLogRoutes);
 router.use("/staff-payment",AuthenticateToken,StaffPaymentRouter);
+router.use("/school-year",AuthenticateToken,SchoolYearRouter)
+router.use("/holiday",AuthenticateToken,HolidayRouter)
 
 module.exports = router

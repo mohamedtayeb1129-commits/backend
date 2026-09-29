@@ -42,11 +42,11 @@ exports.updateDaycareBooksFees = async (req, res) => {
                 });
             }
 
-            const daycare = Number(lvl.daycare) || 0;
+            const uniform = Number(lvl.uniform) || 0;
             const booksDisabled = Boolean(lvl.books_disabled);
             const books = booksDisabled ? 0 : Number(lvl.books) || 0;
 
-            if (daycare < 0 || books < 0) {
+            if (uniform < 0 || books < 0) {
                 return res.status(400).json({
                     success: false,
                     message: `القيم يجب أن تكون موجبة للمستوى ${levelId}`,
@@ -55,7 +55,7 @@ exports.updateDaycareBooksFees = async (req, res) => {
 
             await DaycareBooksFee.update(
                 {
-                    daycare,
+                    uniform,
                     books,
                     books_disabled: booksDisabled,
                 },
@@ -88,7 +88,7 @@ exports.updateDaycareBooksFees = async (req, res) => {
 exports.updateSingleLevel = async (req, res) => {
     try {
         const { levelId } = req.params;
-        const { daycare, books, books_disabled } = req.body;
+        const { uniform, books, books_disabled } = req.body;
 
         const level = await DaycareBooksFee.findOne({ where: { level_id: levelId } });
 
@@ -99,14 +99,14 @@ exports.updateSingleLevel = async (req, res) => {
             });
         }
 
-        if (daycare !== undefined) {
-            if (Number(daycare) < 0) {
+        if (uniform !== undefined) {
+            if (Number(uniform) < 0) {
                 return res.status(400).json({
                     success: false,
                     message: "معاليم الميدعة لا يمكن أن تكون سالبة",
                 });
             }
-            level.daycare = Number(daycare);
+            level.uniform = Number(uniform);
         }
 
         if (books_disabled !== undefined) {

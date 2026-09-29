@@ -14,7 +14,7 @@ const ActivityLog = sequelize.define("activity-log", {
         allowNull: false,
     },
     entity_type: {
-        type: DataTypes.ENUM("student", "supervisor", "teacher", "employ","user","purchase","subscription","zone","tuition_fee"),
+        type: DataTypes.ENUM("student", "supervisor", "teacher", "employ","user","purchase","subscription","zone","tuition_fee","school_year","holiday"),
         allowNull: true,
     },
     entity_id: {

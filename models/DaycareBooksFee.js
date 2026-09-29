@@ -23,7 +23,7 @@ const DaycareBooksFee = sequelize.define("daycare_books_fees", {
         type: DataTypes.STRING,
         allowNull: false
     },
-    daycare: {
+    uniform: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0

@@ -20,11 +20,11 @@ const Employ  = sequelize.define("employs",{
         type:DataTypes.STRING,
     },
     role:{
-        type:DataTypes.ENUM('كاتب(ة)',
-        'محاسب(ة)',
+        type:DataTypes.ENUM(
         'سائق',
         'عامل(ة) نظافة',
-        'عون أمن',),
+        'حارس',
+    ),
 
     },
     joined_date :{

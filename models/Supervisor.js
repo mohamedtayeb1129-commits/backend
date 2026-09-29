@@ -20,11 +20,12 @@ const Supervisor  = sequelize.define("supervisors",{
         type:DataTypes.STRING,
     },
     role:{
-        type:DataTypes.ENUM('قيم عام',
-  'قيم الساحة',
-  'مراقب الدراسة',
-  'مسؤول الانضباط',
-  'مقتصد',),
+        type:DataTypes.ENUM(
+  'قيم(ة)',
+  'نائب مدير',
+  'كاتب(ة)',
+  'مدير(ة)',
+  ),
     },
     salary :{
         type:DataTypes.DECIMAL(10, 2),

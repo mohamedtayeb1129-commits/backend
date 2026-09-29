@@ -44,7 +44,10 @@ exports.createSupervisors = [
     .isIn(["نشط", "في إجازة", "غير نشط"])
     .withMessage("Invalid teacher status."),
   body("role")
-    .isIn(["قيم الساحة", "مراقب الدراسة", "مسؤول الانضباط", "مقتصد"])
+    .isIn(["قيم(ة)",
+            "كاتب(ة)",
+            "مدير(ة)",
+            "نائب مدير"])
     .withMessage("Invalid teacher status."),
   body("joined_date")
     .notEmpty()
@@ -92,7 +95,7 @@ exports.createSupervisors = [
         role,
         joined_date,
       });
-      if (role === "مقتصد") {
+      if (role === "كاتب(ة)") {
         const passwordHash = await bcrypt.hash(password, 10);
         await User.create({
           name,

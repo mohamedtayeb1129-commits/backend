@@ -124,11 +124,13 @@ exports.createStudent = [
             const bookFee = (toBool(is_take_book) && !daycareBooksFee.books_disabled)
                 ? parseFloat(daycareBooksFee.books)
                 : 0;
+                 const uniformFee = (toBool(is_take_uniform))
+                ? parseFloat(daycareBooksFee.books)
+                : 0;
 
             const addition =
                 bookFee +
-                (toBool(transport) ? 10 : 0) +
-                (toBool(is_take_uniform) ? 10 : 0);
+                uniformFee
 
             let totalPrice = null;
 
@@ -162,7 +164,7 @@ exports.createStudent = [
                 if (priceType === "yearly") {
                     totalPrice = baseAmount + addition;
                 } else {
-                    const monthlyAmount = baseAmount / 2;
+                    const monthlyAmount = baseAmount;
                     totalPrice = payment_type === "يدفع بالثلاثي"
                         ? (monthlyAmount * 3) + addition
                         : monthlyAmount + addition;
@@ -295,6 +297,15 @@ exports.deleteStudents = async (req, res) => {
             });
         }
         student.update({ is_deleted: true })
+        await Subscription.update(
+  { is_active: false },
+  {
+    where: {
+      student_id: id,
+      is_active: true
+    }
+  }
+);
 
         await ActivityLog.create({
     action: "delete",
@@ -626,14 +637,17 @@ async function calculatePrice({
     throw { status: 400, message: "that class not exist." };
   }
 
+
   const bookFee = (toBool(is_take_book) && !daycareBooksFee.books_disabled)
     ? parseFloat(daycareBooksFee.books)
     : 0;
 
+    const uniformFee = (toBool(is_take_uniform) && !daycareBooksFee.books_disabled)
+    ? parseFloat(daycareBooksFee.books)
+    : 0;
   const addition =
     bookFee +
-    (toBool(transport) ? 10 : 0) +
-    (toBool(is_take_uniform) ? 10 : 0);
+    uniformFee;
 
   if (payment_type === "غير معني بالدفع") {
     return {
@@ -682,7 +696,7 @@ async function calculatePrice({
       normalMonthPrice = fullQuarterly;
     } else {
       // Monthly ONLY: creation month is halved
-      creationMonthPrice = (monthlyAmount / 2) + addition;
+      creationMonthPrice = monthlyAmount  + addition;
       normalMonthPrice = monthlyAmount;
     }
   }
