@@ -1,5 +1,6 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
+const Supervisor = require("./Supervisor");
 
 const User  = sequelize.define("user",{
     id:{
@@ -22,9 +23,17 @@ const User  = sequelize.define("user",{
         allowNull:false
     },
     role:{
-        type:DataTypes.ENUM("مقتصد","مدير"),
+        type:DataTypes.ENUM("كاتب(ة)","مدير"),
         defaultValue:"مدير"
     },
+    supervisor_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references:{
+            key:"id",
+            model:Supervisor
+        }
+        },
     is_deleted : {
         type:DataTypes.BOOLEAN,
         defaultValue:false

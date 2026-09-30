@@ -7,6 +7,7 @@ const { Op } = require("sequelize");
 const DaycareBooksFee = require("../models/DaycareBooksFee");
 const ActivityLog = require("../models/ActivityLog");
 const User = require("../models/Users");
+const SchoolYear = require("../models/SchoolYear");
 const getUser = async (req) => {
         const userId = req.userId;
         const user = await User.findByPk(userId);
@@ -134,6 +135,7 @@ exports.createStudent = [
 
             let totalPrice = null;
 
+
             if (
                 payment_type === "يدفع شهريًا" ||
                 payment_type === "يدفع بالثلاثي" ||
@@ -197,6 +199,13 @@ exports.createStudent = [
                 address,
             });
 
+             const schoolYear = await SchoolYear.findOne({
+          where: {
+            status: "active",
+          },
+          order: [["start_date", "DESC"]],
+        });
+
             if (payment_type !== "غير معني بالدفع") {
                const subscription =  await Subscription.create({
                     amount: totalPrice,
@@ -208,6 +217,7 @@ exports.createStudent = [
                     payment_type,
                     promotion: promotion || null,
                     siblings_count: siblings_count || null,
+                    school_year_id:schoolYear.id
                 });
 
                  await StudentPayment.create({

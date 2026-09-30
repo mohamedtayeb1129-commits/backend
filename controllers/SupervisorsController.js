@@ -5,6 +5,7 @@ const sequelize = require("../config/db");
 const bcrypt = require("bcryptjs");
 const ActivityLog = require("../models/ActivityLog");
 const StaffSalary = require("../models/StaffSalary");
+const { Op } = require("sequelize");
 
 const getUser = async (req) => {
   const userId = req.userId;
@@ -85,6 +86,16 @@ exports.createSupervisors = [
         });
       }
 
+      // email is only used when a User account is created (clerk role)
+      if (role === "كاتب(ة)") {
+        const emailUser = await User.findOne({ where: { email } });
+        if (emailUser) {
+          return res.status(400).json({
+            message: "email exist",
+          });
+        }
+      }
+
       const supervisor = await Supervisor.create({
         name,
         last_name,
@@ -104,6 +115,7 @@ exports.createSupervisors = [
           password: passwordHash,
           role,
           joined_date,
+          supervisor_id:supervisor.id
         });
       }
       const now = new Date();
@@ -164,6 +176,13 @@ exports.getAllSupervisors = async (req, res) => {
     const supervisors = await Supervisor.findAll({
       where: { is_deleted: false },
       order: [["createdAt", "DESC"]],
+      include:[
+        {
+          model:User,
+          as:"userSupervisor",
+          attributes:["email"]
+        }
+      ]
     });
 
     return res.status(200).json({
@@ -248,7 +267,10 @@ exports.updateSupervisor = [
     .withMessage("Invalid supervisor status."),
 
   body("role")
-    .isIn(["قيم الساحة", "مراقب الدراسة", "مسؤول الانضباط", "متصرف"])
+    .isIn(["قيم(ة)",
+            "كاتب(ة)",
+            "مدير(ة)",
+            "نائب مدير"])
     .withMessage("Invalid supervisor role."),
 
   async (req, res) => {
@@ -283,9 +305,10 @@ exports.updateSupervisor = [
       } = req.body;
 
       // Find supervisor
-      const supervisor = await Supervisor.findByPk(id, {
-        transaction,
-      });
+     const supervisor = await Supervisor.findByPk(id, {
+  include: [{ model: User, as: "userSupervisor" }], // same alias as in your GET
+  transaction,
+});
 
       if (!supervisor) {
         await transaction.rollback();
@@ -333,58 +356,44 @@ exports.updateSupervisor = [
       );
 
       /*
-       * If supervisor is "متصرف",
        * create/update the User account
        */
-      if (role === "متصرف") {
-        if (supervisor.user_id) {
-          const supervisorUser = await User.findByPk(supervisor.user_id, {
-            transaction,
-          });
+      if (role === "كاتب(ة)") {
+  let supervisorUser = supervisor.userSupervisor;
 
-          if (supervisorUser) {
-            const userData = {
-              name,
-              last_name,
-              phone,
-              email,
-            };
+  if (supervisorUser) {
+    // UPDATE existing account — password optional
+    const userData = { name, last_name, phone, email };
 
-            // Hash password only if changed/provided
-            if (password) {
-              userData.password = await bcrypt.hash(password, 10);
-            }
+    if (password) {
+      userData.password = await bcrypt.hash(password, 10);
+    }
 
-            await supervisorUser.update(userData, { transaction });
-          }
-        } else {
-          // Create User account
-          const passwordHash = password
-            ? await bcrypt.hash(password, 10)
-            : null;
+    await supervisorUser.update(userData, { transaction });
+  } else {
+    // CREATE new account — password required here
+    if (!password) {
+      await transaction.rollback();
+      return res.status(400).json({
+        message: "Password is required to create an account.",
+      });
+    }
 
-          const newUser = await User.create(
-            {
-              name,
-              last_name,
-              phone,
-              email,
-              password: passwordHash,
-              role: "متصرف",
-            },
-            { transaction },
-          );
+    const newUser = await User.create(
+      {
+        name,
+        last_name,
+        phone,
+        email,
+        password: await bcrypt.hash(password, 10),
+        role: "كاتب(ة)",
+      },
+      { transaction },
+    );
 
-          // Link user to supervisor
-          await supervisor.update(
-            {
-              user_id: newUser.id,
-            },
-            { transaction },
-          );
-        }
-      }
-
+    await supervisor.update({ user_id: newUser.id }, { transaction });
+  }
+}
       // Activity Log
       await ActivityLog.create(
         {

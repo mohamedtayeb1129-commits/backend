@@ -4,6 +4,7 @@ const Student = require("./Student");
 const StudentPayment = require("./StudentPayment");
 const Subject = require("./Subject");
 const Subscription = require("./Subscription");
+const Supervisor = require("./Supervisor");
 const Teacher = require("./Teacher");
 const TeacherPayment = require("./TeacherPayment");
 const User = require("./Users");
@@ -16,6 +17,15 @@ Teacher.hasMany(Subject,{
 Subject.belongsTo(Teacher,{
     foreignKey:"teacher_id",
     as:"teacher"
+})
+
+Supervisor.hasOne(User,{
+    foreignKey:"supervisor_id",
+    as:"userSupervisor"
+})
+User.belongsTo(Supervisor,{
+    foreignKey:"supervisor_id",
+    as:"supervisorUser"
 })
 
 Teacher.hasMany(Subject,{

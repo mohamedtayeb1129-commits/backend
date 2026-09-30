@@ -8,6 +8,11 @@ const SchoolYear = sequelize.define(
     label: { type: DataTypes.STRING, allowNull: false }, // e.g. "2026-2027"
     start_date: { type: DataTypes.DATEONLY, allowNull: false },
     end_date: { type: DataTypes.DATEONLY, allowNull: false },
+    status: {
+      type: DataTypes.ENUM("active", "closed"),
+      allowNull: false,
+      defaultValue: "active",
+    },
   },
   {
     tableName: "school_years",

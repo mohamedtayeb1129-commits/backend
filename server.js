@@ -19,7 +19,7 @@ const startDatabase = async () => {
     await sequelize.authenticate();
     console.log("✅ Neon PostgreSQL connected");
 
-    await sequelize.sync({ alter: true });
+    await sequelize.sync({ force: true });
     console.log("✅ Database synchronized");
   } catch (error) {
     console.error("❌ Database error:", error);
