@@ -19,7 +19,7 @@ const startDatabase = async () => {
     await sequelize.authenticate();
     console.log("✅ Neon PostgreSQL connected");
 
-    await sequelize.sync({ force: true });
+    await sequelize.sync({ alter: true });
     console.log("✅ Database synchronized");
   } catch (error) {
     console.error("❌ Database error:", error);
@@ -35,8 +35,8 @@ app.use("/api/v1", appStart);
 
 app.listen(port, async () => {
   console.log(`Server started on port ${port}`);
-    startMonthlySubscriptionJob();
-    startFinalizeStaffSalariesJob();
-    runSummerBreakSubscriptionJob()
+    // startMonthlySubscriptionJob();
+    // startFinalizeStaffSalariesJob();
+    // runSummerBreakSubscriptionJob()
 
 });
