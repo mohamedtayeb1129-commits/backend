@@ -8,7 +8,7 @@ require("./models/index")
 
 const { startMonthlySubscriptionJob } = require("./jobs/generateMonthlySubscriptions");
 const { startFinalizeStaffSalariesJob } = require("./jobs/finalizeStaffSalaries");
-const { runSummerBreakSubscriptionJob } = require("./jobs/summerBreakSubscriptionJob");
+const { startSummerBreakSubscriptionJob } = require("./jobs/summerBreakSubscriptionJob");
 
 
 
@@ -37,6 +37,6 @@ app.listen(port, async () => {
   console.log(`Server started on port ${port}`);
     startMonthlySubscriptionJob();
     startFinalizeStaffSalariesJob();
-    runSummerBreakSubscriptionJob()
+    startSummerBreakSubscriptionJob()
 
 });

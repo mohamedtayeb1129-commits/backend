@@ -24,13 +24,13 @@ exports.getStaffSalaries = async (req, res) => {
 
                 if (salary.person_type === "employ") {
                     person = await Employ.findByPk(salary.person_id, {
-                        attributes: ["id", "name", "last_name"]
+                        attributes: ["id", "name", "last_name","cin"]
                     });
                 }
 
                 if (salary.person_type === "supervisor") {
                     person = await Supervisor.findByPk(salary.person_id, {
-                        attributes: ["id", "name", "last_name", "role"]
+                        attributes: ["id", "name", "last_name", "role","cin"]
                     });
                 }
 
@@ -51,6 +51,7 @@ exports.getStaffSalaries = async (req, res) => {
 
                     name: person?.name || "",
                     last_name: person?.last_name || "",
+                    cin: person?.cin || "",
                     role: person?.role || null,
 
                     month: salary.month,

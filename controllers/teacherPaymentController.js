@@ -21,7 +21,7 @@ async function getTeacherPayments(req, res) {
         const result = await Promise.all(
             payments.map(async (payment) => {
                 const teacher = await Teacher.findByPk(payment.teacher_id, {
-                    attributes: ["id", "name", "last_name"]
+                    attributes: ["id", "name", "last_name","cin"]
                 });
 
                return {
@@ -29,6 +29,7 @@ async function getTeacherPayments(req, res) {
     teacher_id: payment.teacher_id,
     name: teacher?.name || "",
     last_name: teacher?.last_name || "",
+    cin: teacher?.cin || "",
     month: payment.month,
     year: payment.year,
     hour_count: payment.hour_count,

@@ -4,6 +4,7 @@ const Student = require("../models/Student");
 const Zone = require("../models/Zone");
 const Subscription = require("../models/Subscription");
 const JobLog = require("../models/JobLog");
+const SchoolYear = require("../models/SchoolYear");
 
 const JOB_NAME = "generate_monthly_subscriptions";
 
@@ -25,15 +26,26 @@ async function runMonthlySubscriptionJob() {
         return;
     }
 
+    const activeSchoolYear = await SchoolYear.findOne({
+        where: { status: "active" }
+    });
+
+    if (!activeSchoolYear) {
+        console.log(`[${JOB_NAME}] no active school year found, skipping`);
+        return;
+    }
+
     const students = await Student.findAll();
     const zones = await Zone.findAll();
-    const zoneMap = Object.fromEntries(zones.map(z => [z.id, z]));
+
+    const zoneMap = Object.fromEntries(
+        zones.map(z => [z.id, z])
+    );
 
     let created = 0;
     let skipped = 0;
 
     for (const student of students) {
-        // most recent subscription tells us which zone this student is in
         const lastSubscription = await Subscription.findOne({
             where: { student_id: student.id },
             order: [["createdAt", "DESC"]]
@@ -45,6 +57,7 @@ async function runMonthlySubscriptionJob() {
         }
 
         const zone = zoneMap[lastSubscription.zone_id];
+
         if (!zone) {
             skipped++;
             continue;
@@ -55,14 +68,21 @@ async function runMonthlySubscriptionJob() {
             transport: !!lastSubscription.transport,
             status: "non payé",
             student_id: student.id,
-            zone_id: zone.id
+            zone_id: zone.id,
+            school_year_id: activeSchoolYear.id
         });
 
         created++;
     }
 
-    await JobLog.create({ job_name: JOB_NAME, period });
-    console.log(`[${JOB_NAME}] created ${created} subscriptions, skipped ${skipped} for ${period}`);
+    await JobLog.create({
+        job_name: JOB_NAME,
+        period
+    });
+
+    console.log(
+        `[${JOB_NAME}] created ${created} subscriptions, skipped ${skipped} for ${period}`
+    );
 }
 
 function startMonthlySubscriptionJob() {
