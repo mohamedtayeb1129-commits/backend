@@ -265,11 +265,13 @@ exports.getAllStudents = async (req, res) => {
             include: [{
                 model: Subscription,
                 as: "subscription",
-                separate: true,          // required for limit on hasMany
-                limit: 1,                // only the last one
+                separate: true,
+                limit: 1,
                 order: [["createdAt", "DESC"]],
                 attributes: [
-                    "student_id",        // FK, required when separate: true (use your real FK name)
+                    "id",
+                    "student_id",
+                    "zone_id",           // required for the Zone join
                     "transport",
                     "is_take_uniform",
                     "is_take_book",
@@ -285,9 +287,15 @@ exports.getAllStudents = async (req, res) => {
             }]
         });
 
+        const result = students.map(s => {
+            const obj = s.toJSON();
+            obj.subscription = obj.subscription?.[0] ?? null;
+            return obj;
+        });
+
         return res.status(200).json({
             message: "Students retrieved successfully.",
-            students,
+            students: result,
         });
 
     } catch (error) {
