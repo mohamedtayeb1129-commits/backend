@@ -35,8 +35,13 @@ app.use("/api/v1", appStart);
 
 app.listen(port, async () => {
   console.log(`Server started on port ${port}`);
+
+  try {
+    // order matters: the break job must not run at the same time as the monthly job
+    await startSummerBreakSubscriptionJob();
     startMonthlySubscriptionJob();
     startFinalizeStaffSalariesJob();
-    startSummerBreakSubscriptionJob()
-
+  } catch (err) {
+    console.error("Failed to start jobs:", err);
+  }
 });

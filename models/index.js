@@ -37,7 +37,7 @@ Scoring.belongsTo(Teacher,{
     as:"scoringTeacher"
 })
 
-Student.hasOne(Subscription,{
+Student.hasMany(Subscription,{
     foreignKey:"student_id",
     as:"subscription"
 })
