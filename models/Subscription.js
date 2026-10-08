@@ -1,77 +1,96 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/db");
-const Teacher = require("./Teacher");
 const Student = require("./Student");
 const Zone = require("./Zone");
 const SchoolYear = require("./SchoolYear");
 
-const Subscription  = sequelize.define("subscriptions",{
-    id:{
-        type:DataTypes.BIGINT,
-        primaryKey:true,
-        autoIncrement:true
+const Subscription = sequelize.define(
+    "subscriptions",
+    {
+        id: {
+            type: DataTypes.BIGINT,
+            primaryKey: true,
+            autoIncrement: true,
+        },
+        amount: {
+            type: DataTypes.DOUBLE,
+        },
+        transport: {
+            type: DataTypes.BOOLEAN,
+        },
+        payment_type: {
+            type: DataTypes.ENUM(
+                "يدفع شهريًا",
+                "يدفع بالثلاثي",
+                "يدفع سنويًا",
+                "غير معني بالدفع"
+            ),
+        },
+        status: {
+            type: DataTypes.ENUM("payé", "en attente", "non payé"),
+            defaultValue: "payé",
+        },
+        is_take_book: {
+            type: DataTypes.BOOLEAN,
+        },
+        is_take_uniform: {
+            type: DataTypes.BOOLEAN,
+        },
+        promotion: {
+            type: DataTypes.ENUM("discount_50", "free"),
+            allowNull: true,
+            defaultValue: null,
+        },
+        siblings_count: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+        },
+        student_id: {
+            type: DataTypes.BIGINT,
+            allowNull: false,
+            references: {
+                model: Student,
+                key: "id",
+            },
+        },
+        zone_id: {
+            type: DataTypes.BIGINT,
+            references: {
+                model: Zone,
+                key: "id",
+            },
+        },
+        school_year_id: {
+            type: DataTypes.BIGINT,
+            allowNull: false,
+            references: {
+                model: SchoolYear,
+                key: "id",
+            },
+        },
+        // format "YYYY-MM", e.g. "2026-10"
+        month: {
+            type: DataTypes.STRING(7),
+            allowNull: false,
+        },
+        is_active: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: true,
+        },
+        deactivated_by_break: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+        },
     },
-    amount:{
-        type:DataTypes.DOUBLE,
-    },
-    transport:{
-        type:DataTypes.BOOLEAN
-    },
-    payment_type:{
-        type:DataTypes.ENUM('يدفع شهريًا',
-            'يدفع بالثلاثي',
-            'يدفع سنويًا',
-            'غير معني بالدفع'),
-    },
-    status:{
-        type:DataTypes.ENUM("payé","en attente","non payé"),
-        defaultValue:"payé"
-    },
-    is_take_book:{
-        type:DataTypes.BOOLEAN
-    },
-    is_take_uniform:{
-        type:DataTypes.BOOLEAN
-    },
-    promotion:{
-        type:DataTypes.ENUM('discount_50','free'),
-        allowNull:true,
-        defaultValue:null
-    },
-    siblings_count:{
-        type:DataTypes.INTEGER,
-        allowNull:true
-    },
-    student_id:{
-        type:DataTypes.BIGINT,
-        references:{
-            model:Student,
-            key:"id"
-        }
-    },
-    zone_id:{
-        type:DataTypes.BIGINT,
-        references:{
-            model:Zone,
-            key:"id"
-        }
-    },
-    school_year_id: {
-  type: DataTypes.BIGINT,
-  allowNull: false,
-  references: {
-    model: SchoolYear,
-    key: "id",
-  },
-},
-    is_active: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true
-    },
-    deactivated_by_break: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
+    {
+        indexes: [
+            {
+                unique: true,
+                name: "uniq_subscription_student_year_month",
+                fields: ["student_id", "school_year_id", "month"],
+            },
+        ],
     }
-    
-})
-module.exports = Subscription
+);
+
+module.exports = Subscription;

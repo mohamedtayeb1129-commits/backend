@@ -9,6 +9,7 @@ require("./models/index")
 const { startMonthlySubscriptionJob } = require("./jobs/generateMonthlySubscriptions");
 const { startFinalizeStaffSalariesJob } = require("./jobs/finalizeStaffSalaries");
 const { startSummerBreakSubscriptionJob } = require("./jobs/summerBreakSubscriptionJob");
+const { startTrimesterSubscriptionJob } = require("./jobs/generateTrimesterSubscriptions");
 
 
 
@@ -41,6 +42,7 @@ app.listen(port, async () => {
     await startSummerBreakSubscriptionJob();
     startMonthlySubscriptionJob();
     startFinalizeStaffSalariesJob();
+    startTrimesterSubscriptionJob();
   } catch (err) {
     console.error("Failed to start jobs:", err);
   }

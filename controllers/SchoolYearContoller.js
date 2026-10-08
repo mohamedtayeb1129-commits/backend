@@ -49,50 +49,86 @@ exports.createSchoolYear = [
             }
 
             return true;
-        })
-    ,async (req, res) => {
-    try {
+        }),
 
-        const errors = validationResult(req);
+    async (req, res) => {
+        const transaction = await SchoolYear.sequelize.transaction();
 
-        if (!errors.isEmpty()) {
-            return res.status(400).json({
-                message: "Validation failed",
-                errors: errors.array(),
+        try {
+            const errors = validationResult(req);
+
+            if (!errors.isEmpty()) {
+                await transaction.rollback();
+
+                return res.status(400).json({
+                    message: "Validation failed",
+                    errors: errors.array(),
+                });
+            }
+
+            const { label, start_date, end_date } = req.body;
+
+            // Find the current active school year
+            const activeSchoolYear = await SchoolYear.findOne({
+                where: {
+                    status: "active",
+                },
+                transaction,
+                lock: transaction.LOCK.UPDATE,
+            });
+
+            // Close the previous active school year
+            if (activeSchoolYear) {
+                await activeSchoolYear.update(
+                    {
+                        status: "closed",
+                    },
+                    {
+                        transaction,
+                    }
+                );
+            }
+
+            // Create the new school year as active
+            const schoolYear = await SchoolYear.create(
+                {
+                    label,
+                    start_date,
+                    end_date,
+                    status: "active",
+                },
+                {
+                    transaction,
+                }
+            );
+
+            await transaction.commit();
+
+            await createActivityLog(
+                req,
+                "create",
+                "school_year",
+                schoolYear.id,
+                schoolYear.label,
+                `تمت إضافة السنة الدراسية ${schoolYear.label}`
+            );
+
+            return res.status(201).json({
+                message: "School year created successfully",
+                schoolYear,
+            });
+        } catch (error) {
+            await transaction.rollback();
+
+            console.error(error);
+
+            return res.status(500).json({
+                message: "Failed to create school year",
+                error: error.message,
             });
         }
-        const { label, start_date, end_date } = req.body;
-
-
-        const schoolYear = await SchoolYear.create({
-            label,
-            start_date,
-            end_date,
-        });
-
-        await createActivityLog(
-            req,
-            "create",
-            "school_year",
-            schoolYear.id,
-            schoolYear.label,
-            `تمت إضافة السنة الدراسية ${schoolYear.label}`
-        );
-
-         res.status(201).json({
-            message: "School year created successfully",
-            schoolYear,
-        });
-    } catch (error) {
-        console.error(error);
-
-        res.status(500).json({
-            message: "Failed to create school year",
-            error: error.message,
-        });
-    }
-}
-]
+    },
+];
 
 // PUT /school-years/:id
 exports.updateSchoolYear = async (req, res) => {

@@ -8,6 +8,7 @@ const DaycareBooksFee = require("../models/DaycareBooksFee");
 const ActivityLog = require("../models/ActivityLog");
 const User = require("../models/Users");
 const SchoolYear = require("../models/SchoolYear");
+const { currentPeriod } = require("../utils/currentPeriod");
 const getUser = async (req) => {
         const userId = req.userId;
         const user = await User.findByPk(userId);
@@ -83,6 +84,7 @@ exports.createStudent = [
                     errors: errors.array(),
                 });
             }
+            const month = currentPeriod()
 
             const {
                 name,
@@ -217,7 +219,8 @@ exports.createStudent = [
                     payment_type,
                     promotion: promotion || null,
                     siblings_count: siblings_count || null,
-                    school_year_id:schoolYear.id
+                    school_year_id:schoolYear.id,
+                    month,
                 });
 
                  await StudentPayment.create({

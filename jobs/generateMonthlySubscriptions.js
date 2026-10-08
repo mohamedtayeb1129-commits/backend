@@ -3,25 +3,31 @@ const cron = require("node-cron");
 const { Op } = require("sequelize");
 const Student = require("../models/Student");
 const Zone = require("../models/Zone");
-const Price = require("../models/Price");
+const TuitionFee = require("../models/TuitionFee");
 const Subscription = require("../models/Subscription");
 const JobLog = require("../models/JobLog");
 const SchoolYear = require("../models/SchoolYear");
+const { currentPeriod, TIMEZONE } = require("../utils/currentPeriod");
 
 const JOB_NAME = "generate_monthly_subscriptions";
-const TIMEZONE = "Africa/Tunis";
 
-// "YYYY-MM" in Tunisia time
-function currentPeriod(date = new Date()) {
-    const parts = new Intl.DateTimeFormat("en-CA", {
-        timeZone: TIMEZONE,
-        year: "numeric",
-        month: "2-digit",
-    }).formatToParts(date);
+// normalize DATEONLY string / Date to "YYYY-MM-DD"
+function toYMD(value) {
+    if (!value) return null;
+    if (value instanceof Date) return value.toISOString().slice(0, 10);
+    return String(value).slice(0, 10);
+}
 
-    const year = parts.find((p) => p.type === "year").value;
-    const month = parts.find((p) => p.type === "month").value;
-    return `${year}-${month}`;
+// true if any day of the "YYYY-MM" period falls inside [start_date, end_date]
+function periodInsideSchoolYear(period, schoolYear) {
+    const start = toYMD(schoolYear.start_date);
+    const end = toYMD(schoolYear.end_date);
+    const monthStart = `${period}-01`;
+    const monthEnd = `${period}-31`; // string compare, so 31 is safe for any month
+
+    if (start && start > monthEnd) return false; // year hasn't started yet
+    if (end && end < monthStart) return false; // year already ended
+    return true;
 }
 
 async function hasRunThisMonth(period = currentPeriod()) {
@@ -47,9 +53,18 @@ async function runMonthlySubscriptionJob() {
         return;
     }
 
+    // outside the school year (summer break): generate nothing, log nothing
+    if (!periodInsideSchoolYear(period, activeSchoolYear)) {
+        console.log(
+            `[${JOB_NAME}] ${period} is outside school year ` +
+                `${toYMD(activeSchoolYear.start_date)} -> ${toYMD(activeSchoolYear.end_date)}, skipping`
+        );
+        return;
+    }
+
     const students = await Student.findAll({ where: { is_deleted: false } });
     const zones = await Zone.findAll();
-    const prices = await Price.findAll({ where: { type: "monthly" } });
+    const prices = await TuitionFee.findAll({ where: { type: "monthly" } });
 
     const zoneMap = Object.fromEntries(zones.map((z) => [String(z.id), z]));
     const priceMap = Object.fromEntries(prices.map((p) => [p.label, p]));
