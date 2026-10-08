@@ -265,11 +265,14 @@ exports.getAllStudents = async (req, res) => {
             include: [{
                 model: Subscription,
                 as: "subscription",
+                separate: true,          // required for limit on hasMany
+                limit: 1,                // only the last one
+                order: [["createdAt", "DESC"]],
                 attributes: [
+                    "student_id",        // FK, required when separate: true (use your real FK name)
                     "transport",
                     "is_take_uniform",
                     "is_take_book",
-                    "payment_type",
                     "payment_type",
                     "promotion",
                     "siblings_count"
