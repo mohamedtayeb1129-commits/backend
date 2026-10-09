@@ -233,6 +233,7 @@ exports.updateTeacher = [
             const existingTeacher = await Teacher.findOne({
                 where: {
                     cin: value,
+                    is_deleted: false,
                     id: { [Op.ne]: req.params.id },
                 },
             });
