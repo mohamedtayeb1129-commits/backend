@@ -49,7 +49,7 @@ function esc(value) {
 // Pull subscription-related fields out of a student in one place,
 // so both the PDF and Excel builders stay in sync.
 function getSubscriptionFields(student) {
-    const sub = student.subscription || null;
+    const sub = student.subscription[0] || null;
 
     return {
         paymentType: sub?.payment_type || "",
@@ -88,7 +88,7 @@ function buildStudentsHtml({ students, level }) {
                     <td class="col-center">${esc(sub.transport)}</td>
                     <td class="col-center">${esc(sub.book)}</td>
                     <td class="col-center">${esc(sub.uniform)}</td>
-                    <td class="col-center">${esc(sub.zone)}</td>
+                    <td class="col-center">${esc(sub.zone) || "--"}</td>
                 </tr>
             `;
         })
@@ -350,7 +350,7 @@ exports.exportStudents = async (req, res) => {
         });
 
         const rawFilename = `لائحة-التلاميذ${level ? `-${level}` : ""}`;
-        const asciiFallback = `students${level ? `-${level}` : ""}`;
+        const asciiFallback = "students";
 
         // =========================
         // PDF (Puppeteer)

@@ -9,6 +9,7 @@ const ActivityLog = require("../models/ActivityLog");
 const User = require("../models/Users");
 const SchoolYear = require("../models/SchoolYear");
 const { currentPeriod } = require("../utils/currentPeriod");
+const Enrollment = require("../models/Enrollment");
 const getUser = async (req) => {
         const userId = req.userId;
         const user = await User.findByPk(userId);
@@ -229,7 +230,10 @@ exports.createStudent = [
             subscription_id: subscription.id,
                 });
             }
-            
+
+             await Enrollment.create(
+        { student_id: student.id, school_year_id: schoolYear.id },
+      );
 
             await ActivityLog.create({
                 action: "create",
@@ -408,7 +412,7 @@ exports.updateStudent = [
 
     async (req, res) => {
         try {
-        const user = await getUser(req);
+            const user = await getUser(req);
 
             const errors = validationResult(req);
 
@@ -434,12 +438,14 @@ exports.updateStudent = [
                 transport,
                 is_take_book,
                 is_take_uniform,
-                zone_id
+                zone_id,
+                payment_type,
+                promotion,
+                siblings_count,
             } = req.body;
 
             const { id } = req.params;
 
-            // Find student
             const student = await Student.findByPk(id);
 
             if (!student) {
@@ -452,8 +458,8 @@ exports.updateStudent = [
                 const studentUnique = await Student.findOne({
                     where: {
                         unique_id,
-                        id: { [Op.ne]: id }
-                    }
+                        id: { [Op.ne]: id },
+                    },
                 });
 
                 if (studentUnique) {
@@ -463,34 +469,83 @@ exports.updateStudent = [
                 }
             }
 
-            // Check class price
-            const price = await Price.findOne({
-                where: {
-                    label: classe
-                }
-            });
-
-            if (!price) {
+            const daycareBooksFee = await DaycareBooksFee.findOne({ where: { label: classe } });
+            if (!daycareBooksFee) {
                 return res.status(400).json({
                     message: "That class does not exist.",
                 });
             }
 
-            // Convert values to boolean
-            const toBool = (v) =>
-                v === true || v === "true";
+            const toBool = (v) => v === true || v === "true";
 
             const transportBool = toBool(transport);
             const bookBool = toBool(is_take_book);
             const uniformBool = toBool(is_take_uniform);
 
-            const totalPrice =
-                (
-                    parseFloat(price.amount) +
-                    (bookBool ? 10 : 0) +
-                    (transportBool ? 10 : 0) +
-                    (uniformBool ? 10 : 0)
-                ) / 2;
+            const subscription = await Subscription.findOne({
+                where: { student_id: student.id },
+            });
+
+            // Fall back to the existing payment type if the client didn't send one
+            const finalPaymentType = payment_type || (subscription && subscription.payment_type);
+
+            const bookFee = (bookBool && !daycareBooksFee.books_disabled)
+                ? parseFloat(daycareBooksFee.books)
+                : 0;
+            // NOTE: change `.uniform` to your real column name for the uniform price
+            const uniformFee = uniformBool
+                ? parseFloat(daycareBooksFee.uniform)
+                : 0;
+
+            const addition = bookFee + uniformFee;
+
+            let totalPrice = null;
+
+            if (
+                finalPaymentType === "يدفع شهريًا" ||
+                finalPaymentType === "يدفع بالثلاثي" ||
+                finalPaymentType === "يدفع سنويًا"
+            ) {
+                const priceType = finalPaymentType === "يدفع سنويًا" ? "yearly" : "monthly";
+
+                const price = await Price.findOne({ where: { label: classe, type: priceType } });
+                if (!price) {
+                    return res.status(400).json({
+                        message: "That class does not exist.",
+                    });
+                }
+
+                let zoneAmount = 0;
+                if (zone_id) {
+                    const zone = await Zone.findOne({ where: { id: zone_id } });
+                    if (!zone) {
+                        return res.status(400).json({
+                            message: "That zone does not exist.",
+                        });
+                    }
+                    zoneAmount = parseFloat(priceType === "monthly" ? zone.amount : zone.amount_yearly);
+                }
+
+                const baseAmount = parseFloat(price.amount) + zoneAmount;
+
+                if (priceType === "yearly") {
+                    totalPrice = baseAmount + addition;
+                } else {
+                    totalPrice = finalPaymentType === "يدفع بالثلاثي"
+                        ? (baseAmount * 3) + addition
+                        : baseAmount + addition;
+                }
+
+                if (promotion === "discount_50") {
+                    totalPrice = totalPrice / 2;
+                } else if (promotion === "free") {
+                    totalPrice = 0;
+                }
+            } else if (finalPaymentType !== "غير معني بالدفع") {
+                return res.status(400).json({
+                    message: "Invalid payment type.",
+                });
+            }
 
             await student.update({
                 name,
@@ -506,33 +561,40 @@ exports.updateStudent = [
                 address,
             });
 
-            // Find existing subscription
-            const subscription = await Subscription.findOne({
-                where: {
-                    student_id: student.id
-                }
-            });
+            if (finalPaymentType !== "غير معني بالدفع") {
+                if (subscription) {
+                    await subscription.update({
+                        amount: totalPrice,
+                        transport: transportBool,
+                        is_take_book: bookBool,
+                        is_take_uniform: uniformBool,
+                        zone_id: zone_id || null,
+                        payment_type: finalPaymentType,
+                        promotion: promotion || null,
+                        siblings_count: siblings_count || null,
+                    });
+                } else {
+                    const schoolYear = await SchoolYear.findOne({
+                        where: { status: "active" },
+                        order: [["start_date", "DESC"]],
+                    });
 
-            if (subscription) {
-                // Update existing 
-                await subscription.update({
-                    amount: totalPrice,
-                    transport: transportBool,
-                    is_take_book: bookBool,
-                    is_take_uniform: uniformBool,
-                    zone_id: zone_id || null
-                });
-            } else {
-                // Create if student doesn't have one
-                await Subscription.create({
-                    amount: totalPrice,
-                    student_id: student.id,
-                    transport: transportBool,
-                    is_take_book: bookBool,
-                    is_take_uniform: uniformBool,
-                    zone_id: zone_id || null
-                });
+                    await Subscription.create({
+                        amount: totalPrice,
+                        student_id: student.id,
+                        transport: transportBool,
+                        is_take_book: bookBool,
+                        is_take_uniform: uniformBool,
+                        zone_id: zone_id || null,
+                        payment_type: finalPaymentType,
+                        promotion: promotion || null,
+                        siblings_count: siblings_count || null,
+                        school_year_id: schoolYear.id,
+                        month: currentPeriod(),
+                    });
+                }
             }
+           
 
             await ActivityLog.create({
                 action: "update",
@@ -543,7 +605,6 @@ exports.updateStudent = [
                 user_name: `${user.name} ${user.last_name}`,
                 user_role: user.role,
                 user_id: user.id,
-               
             });
 
             return res.status(200).json({
