@@ -135,7 +135,7 @@ exports.createStudent = [
                 ? parseFloat(daycareBooksFee.books)
                 : 0;
             const uniformFee = (toBool(is_take_uniform))
-                ? parseFloat(daycareBooksFee.books)
+                ? parseFloat(daycareBooksFee.uniform)
                 : 0;
 
             const addition =
