@@ -514,8 +514,10 @@ exports.updateStudent = [
             const bookBool = toBool(is_take_book);
             const uniformBool = toBool(is_take_uniform);
 
+            // Always target the LAST (most recent) subscription of the student
             const subscription = await Subscription.findOne({
                 where: { student_id: student.id },
+                order: [["id", "DESC"]],
             });
 
             // Fall back to the existing payment type if the client didn't send one
@@ -524,7 +526,6 @@ exports.updateStudent = [
             const bookFee = (bookBool && !daycareBooksFee.books_disabled)
                 ? parseFloat(daycareBooksFee.books)
                 : 0;
-            // NOTE: change `.uniform` to your real column name for the uniform price
             const uniformFee = uniformBool
                 ? parseFloat(daycareBooksFee.uniform)
                 : 0;
@@ -626,7 +627,6 @@ exports.updateStudent = [
                     });
                 }
             }
-           
 
             await ActivityLog.create({
                 action: "update",
