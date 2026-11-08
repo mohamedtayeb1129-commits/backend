@@ -605,7 +605,7 @@ exports.updateAbsence = [
             person_id
         });
 
-        const person = dataAbsence(absence.person_id,absence.person_type)
+        const person = await dataAbsence(absence.person_id,absence.person_type)
 
         await createActivityLog(
             req,
