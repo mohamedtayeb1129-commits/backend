@@ -32,23 +32,20 @@ function computeHoursFromRecords(records) {
     };
 }
 
-// Cycle de paie : du 20 du mois (M-1) au 19 du mois M => cette plage est étiquetée "mois M"
+const pad = (n) => String(n).padStart(2, "0");
+
+// Calendar month: 1st -> last day of the month, returned as "YYYY-MM-DD" strings
 function getPayPeriodBounds(month, year) {
-    const startDate = new Date(year, month - 2, 20); // JS gère le débordement d'année automatiquement
-    const endDate = new Date(year, month - 1, 19);
-    return { startDate, endDate };
+    const lastDay = new Date(year, month, 0).getDate(); // day 0 of next month = last day of this month
+    return {
+        startDate: `${year}-${pad(month)}-01`,
+        endDate: `${year}-${pad(month)}-${pad(lastDay)}`
+    };
 }
 
-// Détermine à quelle période de paie (month, year) appartient une date de pointage (DATEONLY "YYYY-MM-DD")
+// The period is simply the month and year of the date
 function getPayPeriodForDateOnly(dateOnlyStr) {
-    let [year, month, day] = dateOnlyStr.split("-").map(Number);
-    if (day >= 20) {
-        month += 1;
-        if (month > 12) {
-            month = 1;
-            year += 1;
-        }
-    }
+    const [year, month] = dateOnlyStr.split("-").map(Number);
     return { month, year };
 }
 
@@ -98,8 +95,8 @@ async function calculateMonthlySalaries(month, year) {
                 teacher_id: teacher.id,
                 date: {
                     [Op.between]: [
-                        startDate.toISOString().slice(0, 10),
-                        endDate.toISOString().slice(0, 10)
+                        startDate,
+                        endDate
                     ]
                 }
             },
@@ -135,8 +132,8 @@ async function recalculateMonthForTeacher(teacher_id, month, year) {
             teacher_id,
             date: {
                 [Op.between]: [
-                    startDate.toISOString().slice(0, 10),
-                    endDate.toISOString().slice(0, 10)
+                    startDate,
+                    endDate
                 ]
             }
         },

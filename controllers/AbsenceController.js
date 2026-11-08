@@ -65,6 +65,15 @@ exports.createStudentAbsence = [
                 person_id
             });
 
+            await createActivityLog(
+            req,
+            "create",
+            "absence",
+            absence.id,
+            `${student.name} ${student.last_name}`,
+            `تمت إضافة غياب جديد بتاريخ ${date}`
+        );
+
             return res.status(201).json({
                 message: "Student absence added successfully.",
                 absence
@@ -517,6 +526,150 @@ exports.getAllAbsenceEmploys = async (req, res) => {
 
         return res.status(500).json({
             message: "Server error.",
+        });
+    }
+};
+
+const dataAbsence = async (id,type) => {
+    let absence
+    if (type === "employé"){
+        absence = await Employ.findByPk(id);
+    }else if(type === "surveillants"){
+        absence = await Supervisor.findByPk(id);
+    }else if(type === "maître"){
+        absence = await Teacher.findByPk(id);
+    }else{
+        absence = await Student.findByPk(id);
+    }
+    return absence
+}
+
+exports.updateAbsence = [
+    body("reason")
+        .trim()
+        .notEmpty()
+        .withMessage("Absence reason is required."),
+
+    body("date")
+        .notEmpty()
+        .withMessage("Absence date is required.")
+        .isISO8601()
+        .withMessage("Invalid absence date."),
+
+    body("justification")
+        .notEmpty()
+        .withMessage("Justification is required.")
+        .isBoolean()
+        .withMessage("Justification must be true or false."),
+
+    body("person_id")
+        .notEmpty()
+        .withMessage("Student ID is required.")
+        .isInt()
+        .withMessage("Invalid student ID."),
+
+    async (req, res) => {
+    try {
+        const errors = validationResult(req);
+
+            if (!errors.isEmpty()) {
+                return res.status(400).json({
+                    message: "Validation failed",
+                    errors: errors.array(),
+                });
+            }
+        const { id } = req.params;
+
+        const absence = await Absence.findByPk(id);
+
+        if (!absence) {
+            return res.status(404).json({
+                success: false,
+                message: "Absence not found"
+            });
+        }
+
+        const {
+            reason,
+            date,
+            justification,
+            person_type,
+            person_id
+        } = req.body;
+
+        await absence.update({
+            reason,
+            date,
+            justification,
+            person_type,
+            person_id
+        });
+
+        const person = dataAbsence(absence.person_id,absence.person_type)
+
+        await createActivityLog(
+            req,
+            "update",
+            "absence",
+            absence.id,
+            `${person.name} ${person.last_name}`,
+            `تم تعديل الغياب بتاريخ ${absence.date}`
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Absence updated successfully",
+            data: absence
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: "Error updating absence",
+            error: error.message
+        });
+    }
+}]
+
+exports.deleteAbsence = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const absence = await Absence.findByPk(id);
+
+        if (!absence) {
+            return res.status(404).json({
+                success: false,
+                message: "Absence not found"
+            });
+        }
+
+        const person = await dataAbsence(absence.person_id,absence.person_type)
+
+
+        await createActivityLog(
+            req,
+            "delete",
+            "absence",
+            absence.id,
+            `${person.name} ${person.last_name}`,
+            `تم حذف الغياب بتاريخ ${absence.date}`
+        );
+
+        await absence.destroy();
+
+        return res.status(200).json({
+            success: true,
+            message: "Absence deleted successfully"
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: "Error deleting absence",
+            error: error.message
         });
     }
 };

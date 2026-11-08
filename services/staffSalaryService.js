@@ -26,6 +26,16 @@ function countAbsenceDays(records) {
     return { total, unjustified };
 }
 
+function toDateOnly(value) {
+    if (typeof value === 'string') return value.slice(0, 10);
+
+    const d = value instanceof Date ? value : new Date(value);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
 // beforeSave sur StaffSalary recalcule total_salary automatiquement dès que
 // base_salary et/ou unjustified_absence_days sont présents (taux fixe /30).
 async function saveAbsenceCounts({ person_type, person_id, month, year, absence_days, unjustified_absence_days, base_salary }) {
@@ -62,10 +72,7 @@ async function recalculateAbsencesForPerson(staffPersonType, person_id, month, y
             person_id,
             person_type: absencePersonType,
             date: {
-                [Op.between]: [
-                    startDate.toISOString().slice(0, 10),
-                    endDate.toISOString().slice(0, 10)
-                ]
+                [Op.between]: [toDateOnly(startDate), toDateOnly(endDate)]
             }
         }
     });
